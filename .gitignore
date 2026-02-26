@@ -1,0 +1,13 @@
+# Archivos de compilación de Zinjai
+Debug/
+*.o
+*.bin
+*.exe
+
+# Archivos temporales
+*.bak
+*.tmp
+*.log
+
+# Carpeta de Git (por si acaso)
+.git/

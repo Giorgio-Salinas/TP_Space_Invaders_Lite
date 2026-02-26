@@ -2,12 +2,16 @@
 #include <iostream>
 #include <conio2.h>
 #include "Player.h"
+#include "BasicEnemy.h"
+#include "AdvancedEnemy.h"
 using namespace std;
 
 Game::Game(int velocidad){
 	velocidadJuego = velocidad;
 	pasoJuego = CLOCKS_PER_SEC /velocidadJuego;
 	tiempoJuego = clock();
+	juegoActivo = true;
+	contadorMovimiento = 0;
 	
 	jugador = new Player(35, BORDE_INF - 1 );
 	
@@ -15,6 +19,14 @@ Game::Game(int velocidad){
 	for(int i = 0; i < MAX_BALAS; i++) {
 		balasJugador[i] = nullptr;
 	}
+	
+	cantidadEnemigos = 0;
+	direccionBloque = 1;
+	for(int i = 0; i < MAX_ENEMIGOS; i++) {
+		enemigos[i] = nullptr;
+	}
+	
+	crearEnemigos();
 	
 }
 
@@ -26,17 +38,25 @@ Game::~Game() {
 			delete balasJugador[i];
 		}
 	}
+	
+	// Liberar memoria de enemigos
+	for(int i = 0; i < MAX_ENEMIGOS; i++) {
+		if(enemigos[i] != nullptr) {
+			delete enemigos[i];
+		}
+	}
 }
 
+
 void Game::disparar() {
-	// Busca un espacio libre en el array
+	
 	for(int i = 0; i < MAX_BALAS; i++) {
-		if(balasJugador[i] == nullptr) {  // Espacio libre
+		if(balasJugador[i] == nullptr) { 
 			// Crear nueva bala en la posición del jugador
 			balasJugador[i] = new ProyectilPlayer(
-												  jugador->getX() + 1,  // +1 para centrar (porque <A> ocupa 3)
-												  jugador->getY() - 1
-												  );
+			jugador->getX() + 1,  // +1 para centrar (porque <A> ocupa 3)
+			jugador->getY() - 1
+			);
 			cantidadBalas++;
 			break;  // Salir después de crear UNA bala
 		}
@@ -53,10 +73,10 @@ void Game::actualizarBalas() {
 
 void Game::eliminarBalasInactivas() {
 	for(int i = 0; i < MAX_BALAS; i++) {
-		// Si la bala existe pero ya no esta activa
+		// Si la bala existe pero ya no está activa
 		if(balasJugador[i] != nullptr && !balasJugador[i]->estaActivo()) {
-			delete balasJugador[i];      // Liberar memoria
-			balasJugador[i] = nullptr;    // Marcar como libre
+			delete balasJugador[i];      // Libera memoria
+			balasJugador[i] = nullptr;    // Marca como libre
 			cantidadBalas--;
 		}
 	}
@@ -100,7 +120,7 @@ void Game::pantallaInicio(){
 	
 	clrscr();
 	
-	// Dibuja bordes después de limpiar
+	// Dibuja bordes 
 	for(int i = BORDE_IZQ; i <= BORDE_DER; i++) {
 		gotoxy(i, BORDE_SUP); cout << ".";
 		gotoxy(i, BORDE_INF); cout << ".";
@@ -110,13 +130,113 @@ void Game::pantallaInicio(){
 		gotoxy(BORDE_DER, i); cout << ".";
 	}
 }
+void Game::crearEnemigos() {
+	// 3 filas de enemigos
+	for(int fila = 0; fila < 3; fila++) {
+		for(int col = 0; col < 8; col++) {
+			if(cantidadEnemigos >= MAX_ENEMIGOS) break;
+			
+			int x = BORDE_IZQ + 5 + (col * 6);
+			int y = BORDE_SUP + 2 + fila;
+			
+			// Primera fila: enemigos avanzados
+			if(fila == 0) {
+				enemigos[cantidadEnemigos] = new AdvancedEnemy(x, y);
+			} 
+			// Filas 2 y 3: enemigos básicos
+			else {
+				enemigos[cantidadEnemigos] = new BasicEnemy(x, y);
+			}
+			cantidadEnemigos++;
+		}
+	}
+}
 
+void Game::moverEnemigos() {
+	contadorMovimiento++;
+	
+	
+	if(contadorMovimiento % 5 == 0) {
+		bool llegoAlBorde = false;
+		
+		// Borra a todos los enemigos
+		for(int i = 0; i < MAX_ENEMIGOS; i++) {
+			if(enemigos[i] != nullptr && enemigos[i]->estaVivo()) {
+				enemigos[i]->borrar();
+			}
+		}
+		
+		//  Mueve a todos los enemigos
+		for(int i = 0; i < MAX_ENEMIGOS; i++) {
+			if(enemigos[i] != nullptr && enemigos[i]->estaVivo()) {
+				enemigos[i]->mover(direccionBloque, llegoAlBorde);
+			}
+		}
+		
+		// Dibuja a todos
+		for(int i = 0; i < MAX_ENEMIGOS; i++) {
+			if(enemigos[i] != nullptr && enemigos[i]->estaVivo()) {
+				enemigos[i]->dibujar();
+			}
+		}
+		
+		// Si tocan el borde, baja.
+		if(llegoAlBorde) {
+			direccionBloque *= -1;
+			
+			// Bajar todos
+			for(int i = 0; i < MAX_ENEMIGOS; i++) {
+				if(enemigos[i] != nullptr && enemigos[i]->estaVivo()) {
+					enemigos[i]->borrar();
+				}
+			}
+			
+			for(int i = 0; i < MAX_ENEMIGOS; i++) {
+				if(enemigos[i] != nullptr && enemigos[i]->estaVivo()) {
+					enemigos[i]->bajar();
+					
+					if(enemigos[i]->getY() >= BORDE_INF - 1) {
+						juegoActivo = false;
+					}
+				}
+			}
+			
+			for(int i = 0; i < MAX_ENEMIGOS; i++) {
+				if(enemigos[i] != nullptr && enemigos[i]->estaVivo()) {
+					enemigos[i]->dibujar();
+				}
+			}
+		}
+		
+		// Reseteamos el contador para que no crezca infinito
+		if(contadorMovimiento >= 1000) {
+			contadorMovimiento = 0;
+		}
+	}
+}
+
+void Game::enemigosDisparan() {
+	static int contadorDisparos = 0;
+	contadorDisparos++;
+	
+	
+	if(contadorDisparos % 10 == 0) {
+		for(int i = 0; i < MAX_ENEMIGOS; i++) {
+			if(enemigos[i] != nullptr) {
+				
+				if(rand() % 100 < 5) {
+					// crea un ProyectilEnemigo
+					
+				}
+			}
+		}
+	}
+}
 
 void Game::iniciar(){
 	
 	pantallaInicio();
 	jugador->dibujar();
-	bool juegoActivo(true);
 	char tecla;
 	
 	while (juegoActivo){
@@ -124,7 +244,7 @@ void Game::iniciar(){
 		if(tiempoJuego + pasoJuego < clock()) {
 			
 			if (kbhit()){
-				char tecla = getch();
+				tecla = getch();
 				
 				if (tecla == 27) {  // ESC
 					juegoActivo = false;
@@ -137,12 +257,13 @@ void Game::iniciar(){
 				}
 				else if (tecla == ' ') { //space
 					disparar();
-					
 				}
 				
 			}
 			
 			actualizarBalas();
+			moverEnemigos();
+			enemigosDisparan();
 			gotoxy(50, 1);
 			cout << "Balas: " << cantidadBalas << "   ";
 			eliminarBalasInactivas();
