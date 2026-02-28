@@ -5,6 +5,7 @@
 #include "Player.h"
 #include "ProyectilPlayer.h"
 #include "Enemy.h"
+#include "ProyectilEnemy.h"
 
 class Game{
 private:
@@ -27,6 +28,11 @@ private:
 	Enemy* enemigos[MAX_ENEMIGOS];
 	int cantidadEnemigos;
 	int direccionBloque;
+	ProyectilEnemy* balasEnemigas[MAX_BALAS];
+	int cantidadBalasEnemigas;
+	int puntuacion;
+	int contadorDisparosEnemigos;
+	int maxDisparosEnemigosSimultaneos;
 public:
 	Game(int velocidad = 30);
 	~Game();
@@ -38,6 +44,8 @@ public:
 	void crearEnemigos();
 	void moverEnemigos();
 	void enemigosDisparan();
+	void actualizarBalasEnemigas();
+	void eliminarBalasEnemigasInactivas();
 };
 
 #endif

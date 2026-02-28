@@ -28,6 +28,15 @@ Game::Game(int velocidad){
 	
 	crearEnemigos();
 	
+	cantidadBalasEnemigas = 0;
+	puntuacion = 0;
+	contadorDisparosEnemigos = 0;
+	for(int i = 0; i < MAX_BALAS; i++) {
+		balasEnemigas[i] = nullptr;
+	}
+	
+	maxDisparosEnemigosSimultaneos = 3;
+	
 }
 
 Game::~Game() {
@@ -39,7 +48,7 @@ Game::~Game() {
 		}
 	}
 	
-	// Liberar memoria de enemigos
+	// Libera memoria de enemigos
 	for(int i = 0; i < MAX_ENEMIGOS; i++) {
 		if(enemigos[i] != nullptr) {
 			delete enemigos[i];
@@ -58,7 +67,7 @@ void Game::disparar() {
 			jugador->getY() - 1
 			);
 			cantidadBalas++;
-			break;  // Salir después de crear UNA bala
+			break;  // Sale después de crear una bala
 		}
 	}
 }
@@ -78,6 +87,54 @@ void Game::eliminarBalasInactivas() {
 			delete balasJugador[i];      // Libera memoria
 			balasJugador[i] = nullptr;    // Marca como libre
 			cantidadBalas--;
+		}
+	}
+}
+
+void Game::enemigosDisparan() {
+	contadorDisparosEnemigos++;
+	
+	// Solo dispara si no se alcanzó el límite
+	if(cantidadBalasEnemigas < maxDisparosEnemigosSimultaneos) {
+		if(contadorDisparosEnemigos % 30 == 0) {
+			for(int i = 0; i < MAX_ENEMIGOS; i++) {
+				if(enemigos[i] != nullptr && enemigos[i]->estaVivo()) {
+					if(rand() % 100 < 3) {
+						for(int j = 0; j < MAX_BALAS; j++) {
+							if(balasEnemigas[j] == nullptr) {
+								balasEnemigas[j] = new ProyectilEnemy(
+																	  enemigos[i]->getX() + 1,
+																	  enemigos[i]->getY() + 1
+																	  );
+								cantidadBalasEnemigas++;
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	if(contadorDisparosEnemigos >= 1000) {
+		contadorDisparosEnemigos = 0;
+	}
+}
+
+void Game::actualizarBalasEnemigas() {
+	for(int i = 0; i < MAX_BALAS; i++) {
+		if(balasEnemigas[i] != nullptr) {
+			balasEnemigas[i]->actualizar();
+		}
+	}
+}
+
+void Game::eliminarBalasEnemigasInactivas() {
+	for(int i = 0; i < MAX_BALAS; i++) {
+		if(balasEnemigas[i] != nullptr && !balasEnemigas[i]->estaActivo()) {
+			delete balasEnemigas[i];
+			balasEnemigas[i] = nullptr;
+			cantidadBalasEnemigas--;
 		}
 	}
 }
@@ -184,7 +241,7 @@ void Game::moverEnemigos() {
 		if(llegoAlBorde) {
 			direccionBloque *= -1;
 			
-			// Bajar todos
+			// Baja todos
 			for(int i = 0; i < MAX_ENEMIGOS; i++) {
 				if(enemigos[i] != nullptr && enemigos[i]->estaVivo()) {
 					enemigos[i]->borrar();
@@ -208,32 +265,19 @@ void Game::moverEnemigos() {
 			}
 		}
 		
-		// Reseteamos el contador para que no crezca infinito
+		// Resetea el contador para que no crezca infinito
 		if(contadorMovimiento >= 1000) {
 			contadorMovimiento = 0;
 		}
 	}
 }
 
-void Game::enemigosDisparan() {
-	static int contadorDisparos = 0;
-	contadorDisparos++;
 	
 	
-	if(contadorDisparos % 10 == 0) {
-		for(int i = 0; i < MAX_ENEMIGOS; i++) {
-			if(enemigos[i] != nullptr) {
-				
-				if(rand() % 100 < 5) {
-					// crea un ProyectilEnemigo
-					
-				}
-			}
-		}
-	}
-}
+
 
 void Game::iniciar(){
+	int contadorFrames = 0;
 	
 	pantallaInicio();
 	jugador->dibujar();
@@ -242,6 +286,9 @@ void Game::iniciar(){
 	while (juegoActivo){
 		// CONTROL DE TIEMPO
 		if(tiempoJuego + pasoJuego < clock()) {
+			
+			contadorFrames++;
+			
 			
 			if (kbhit()){
 				tecla = getch();
@@ -262,11 +309,13 @@ void Game::iniciar(){
 			}
 			
 			actualizarBalas();
+			actualizarBalasEnemigas();
 			moverEnemigos();
 			enemigosDisparan();
 			gotoxy(50, 1);
 			cout << "Balas: " << cantidadBalas << "   ";
 			eliminarBalasInactivas();
+			eliminarBalasEnemigasInactivas();
 			tiempoJuego = clock();  // Actualiza tiempo
 		}
 	}
