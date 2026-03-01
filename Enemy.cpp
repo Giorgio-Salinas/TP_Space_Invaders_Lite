@@ -16,14 +16,14 @@ void Enemy::dibujar() {
 	if(vivo) {
 		gotoxy(x, y);
 		textcolor(color);
-		cout <<"<"<<simbolo<<">";
+		cout<<simbolo;
 	}
 }
 
 void Enemy::borrar() {
 	if(vivo) {
 		gotoxy(x, y);
-		cout << "   ";
+		cout << " ";
 	}
 }
 
@@ -32,7 +32,7 @@ void Enemy::mover(int direccion, bool& llegoAlBorde) {
 		borrar();
 		x += direccion;
 		
-		if(x <= 3 || x >= 77) {
+		if(x <= 3 || x >= 79) {
 			llegoAlBorde = true;
 		}
 		

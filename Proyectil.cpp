@@ -10,6 +10,7 @@ Proyectil::Proyectil(int sx, int sy, int vel, int col, char simb){
 	color = col;
 	simbolo = simb;
 	activo = true;
+	
 }
 
 void Proyectil::dibujar(){

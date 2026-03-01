@@ -35,7 +35,7 @@ Game::Game(int velocidad){
 		balasEnemigas[i] = nullptr;
 	}
 	
-	maxDisparosEnemigosSimultaneos = 3;
+	maxDisparosEnemigosSimultaneos = 10;
 	
 }
 
@@ -63,9 +63,9 @@ void Game::disparar() {
 		if(balasJugador[i] == nullptr) { 
 			// Crear nueva bala en la posición del jugador
 			balasJugador[i] = new ProyectilPlayer(
-			jugador->getX() + 1,  // +1 para centrar (porque <A> ocupa 3)
-			jugador->getY() - 1
-			);
+												  jugador->getX() + 1,  // +1 para centrar (porque <A> ocupa 3)
+												  jugador->getY() - 1
+												  );
 			cantidadBalas++;
 			break;  // Sale después de crear una bala
 		}
@@ -96,16 +96,15 @@ void Game::enemigosDisparan() {
 	
 	// Solo dispara si no se alcanzó el límite
 	if(cantidadBalasEnemigas < maxDisparosEnemigosSimultaneos) {
-		if(contadorDisparosEnemigos % 30 == 0) {
+		if(contadorDisparosEnemigos % 20 == 0) {
 			for(int i = 0; i < MAX_ENEMIGOS; i++) {
 				if(enemigos[i] != nullptr && enemigos[i]->estaVivo()) {
-					if(rand() % 100 < 3) {
+					if(rand() % 100 < 5) {
 						for(int j = 0; j < MAX_BALAS; j++) {
 							if(balasEnemigas[j] == nullptr) {
 								balasEnemigas[j] = new ProyectilEnemy(
-																	  enemigos[i]->getX() + 1,
-																	  enemigos[i]->getY() + 1
-																	  );
+									enemigos[i]->getX() + 1,
+									enemigos[i]->getY() + 1);
 								cantidadBalasEnemigas++;
 								break;
 							}
@@ -212,7 +211,6 @@ void Game::crearEnemigos() {
 void Game::moverEnemigos() {
 	contadorMovimiento++;
 	
-	
 	if(contadorMovimiento % 5 == 0) {
 		bool llegoAlBorde = false;
 		
@@ -272,8 +270,69 @@ void Game::moverEnemigos() {
 	}
 }
 
+
+void Game::colisiones() {
+	// 1. Balas del jugador vs Enemigos
+	for(int i = 0; i < MAX_BALAS; i++) {
+		if(balasJugador[i] != nullptr) {
+			for(int j = 0; j < MAX_ENEMIGOS; j++) {
+				if(enemigos[j] != nullptr && enemigos[j]->estaVivo()) {
+					
+					if(balasJugador[i]->getX() == enemigos[j]->getX() &&
+					   balasJugador[i]->getY() == enemigos[j]->getY()) {
+						
+						// Suma puntos
+						puntuacion += enemigos[j]->getPuntos();
+						
+						enemigos[j]->borrar();
+						
+						// Mata enemigo
+						enemigos[j]->morir();
+						delete enemigos[j];
+						enemigos[j] = nullptr;
+						cantidadEnemigos--;
+						
+						// Elimina bala
+						delete balasJugador[i];
+						balasJugador[i] = nullptr;
+						cantidadBalas--;
+						
+						// Victoria
+						if(cantidadEnemigos == 0) {
+							juegoActivo = false;
+						}
+						break;
+					}
+				}
+			}
+		}
+	}
 	
-	
+	// 2. Balas enemigas vs Jugador
+	for(int i = 0; i < MAX_BALAS; i++) {
+		if(balasEnemigas[i] != nullptr) {
+			
+			if(balasEnemigas[i]->getX() == jugador->getX() &&
+			   balasEnemigas[i]->getY() == jugador->getY()) {
+				
+				// Quitar vida (el parpadeo se activa dentro de perderVida)
+				jugador->perderVida();
+				
+				// Eliminar bala
+				delete balasEnemigas[i];
+				balasEnemigas[i] = nullptr;
+				cantidadBalasEnemigas--;
+				
+				// Game over
+				if(jugador->getVida() <= 0) {
+					juegoActivo = false;
+				}
+				break;
+			}
+		}
+	}
+}
+
 
 
 void Game::iniciar(){
@@ -312,19 +371,38 @@ void Game::iniciar(){
 			actualizarBalasEnemigas();
 			moverEnemigos();
 			enemigosDisparan();
+			
+			colisiones();
+			jugador->dibujar();
+			
 			gotoxy(50, 1);
-			cout << "Balas: " << cantidadBalas << "   ";
+			cout << "Puntos: " << puntuacion << " Vidas: " << jugador->getVida() << "   ";
+			
+			
 			eliminarBalasInactivas();
 			eliminarBalasEnemigasInactivas();
 			tiempoJuego = clock();  // Actualiza tiempo
+			
+			
 		}
 	}
 	
 	// Mensaje de despedida
 	clrscr();
 	gotoxy(35, 12);
-	textcolor(LIGHTRED);
-	cout << "JUEGO TERMINADO";
+	
+	if(cantidadEnemigos == 0) {
+		textcolor(LIGHTGREEN);
+		cout << "!!! GANASTE =) !!!";
+	} else {
+		textcolor(LIGHTRED);
+		cout << "!!! PERDISTE =( !!!";
+	}
+	
+	gotoxy(30, 14);
+	textcolor(WHITE);
+	cout << "Puntuacion final: " << puntuacion;
+	
 	getch();
 }
 

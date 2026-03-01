@@ -6,6 +6,7 @@ private:
 	int vida;
 	int x;
 	int y;
+	bool golpeado;
 	
 public:
 	Player(int posX, int posY);
@@ -18,6 +19,7 @@ public:
 	int getY() const { return y; }
 	int getVida() const { return vida; }
 	void perderVida();
+
 };
 
 #endif

@@ -18,7 +18,7 @@ private:
 	int contadorMovimiento;
 	bool juegoActivo;
 	
-	//control de tiempo.
+	
 	clock_t tiempoJuego;
 	clock_t pasoJuego;
 	int velocidadJuego;
@@ -46,6 +46,7 @@ public:
 	void enemigosDisparan();
 	void actualizarBalasEnemigas();
 	void eliminarBalasEnemigasInactivas();
+	void colisiones();
 };
 
 #endif

@@ -8,6 +8,7 @@ protected:
 	int color;
 	char simbolo;
 	bool activo;
+	
 public:
 	Proyectil(int, int, int, int, char);
 	virtual void dibujar();

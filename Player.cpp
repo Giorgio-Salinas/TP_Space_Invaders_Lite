@@ -7,17 +7,26 @@ Player::Player(int posX, int posY){
 	x = posX;
 	y = posY;
 	vida = 3;
+	golpeado = false;
 }
 
 void Player::dibujar(){
 	gotoxy(x, y);
-	textcolor(RED);
-	cout<<"<A>";
+	if(golpeado) {
+		textcolor(RED);
+		cout<<"M";
+		golpeado = false;
+		
+	}else{
+		textcolor(LIGHTCYAN);
+		cout<<"A";
+		
+	}
 }
 
 void Player::borrar(){
 	gotoxy(x, y);
-	cout<<"   ";
+	cout<<" ";
 }
 
 void Player::moverIzquierda(int bordeIzq){
@@ -38,5 +47,7 @@ void Player::moverDerecha(int bordeDer){
 
 void Player::perderVida(){
 	vida--;
+	golpeado = true;
 	if(vida < 0) vida = 0;
 }
+
